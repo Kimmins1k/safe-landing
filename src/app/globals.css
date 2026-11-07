@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* 기획서 7장: 네이비 기본 + 안전 오렌지 포인트 */
+@theme {
+  --color-navy-50: #eef2f8;
+  --color-navy-100: #d5deec;
+  --color-navy-700: #1f3a63;
+  --color-navy-800: #172c4d;
+  --color-navy-900: #0f1f38;
+  --color-safety-500: #f7811e;
+  --color-safety-600: #e06c0a;
+  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-navy-900);
+}
