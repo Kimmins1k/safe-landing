@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { requireStage, STATUS_LABEL, type MemberStatus } from "@/lib/auth";
 import { approveMember, rejectMember } from "./actions";
-import { ConfirmButton } from "../confirm-button";
+import { ConfirmButton } from "@/app/confirm-button";
 
 type PendingMember = {
   id: string;

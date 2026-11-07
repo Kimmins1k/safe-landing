@@ -10,7 +10,7 @@ export function ConfirmButton({ message, children }: { message: string; children
 
   if (!asking) {
     return (
-      <button type="button" className="rounded-lg border border-navy-100 px-3 py-1" onClick={() => setAsking(true)}>
+      <button type="button" className="rounded-lg border border-navy-100 px-3 py-1 text-sm" onClick={() => setAsking(true)}>
         {children}
       </button>
     );

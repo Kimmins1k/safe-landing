@@ -10,6 +10,9 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
         <Link href="/admin/members" className="text-navy-700 hover:text-safety-600">
           회원 관리
         </Link>
+        <Link href="/admin/activities" className="text-navy-700 hover:text-safety-600">
+          활동 관리
+        </Link>
         <Link href="/" className="ml-auto text-navy-700 hover:text-safety-600">
           홈으로
         </Link>

@@ -107,7 +107,79 @@ await fails(as(ALICE, `select public.remove_member($1)`, [ADMIN]), /일반 회�
 await as(ALICE, `select public.remove_member($1)`, [DAVE]);
 assert.equal((await db.query(`select count(*)::int as n from auth.users where id = $1`, [DAVE])).rows[0].n, 0);
 
-// 10. 정지 방지 Cron(service_role)은 읽을 수 있다.
+// 10. 활동·목록: 회원은 읽기만, 관리자만 활동을 등록·숨김. 승인 대기자는 못 읽는다.
+//     지금 관리자는 ALICE와 ADMIN. BOB은 일반 회원, EVE는 승인 대기.
+const BOB = "00000000-0000-0000-0000-0000000000b1";
+const EVE = "00000000-0000-0000-0000-0000000000e1";
+await db.exec(`insert into auth.users values ('${BOB}', 'bob@example.com'), ('${EVE}', 'eve@example.com')`);
+await as(BOB, `insert into public.profiles (id, name, cohort) values ($1, '밥', 2025)`, [BOB]);
+await as(EVE, `insert into public.profiles (id, name, cohort) values ($1, '이브', 2026)`, [EVE]);
+await as(ALICE, `select public.set_member_role($1, 'member')`, [BOB]);
+
+assert.equal((await as(BOB, `select id from public.question_types`)).length, 10, "기본 문항 유형 10개");
+assert.equal((await as(BOB, `select id from public.competency_tags`)).length, 12, "기본 역량 태그 12개");
+assert.equal((await as(EVE, `select id from public.question_types`)).length, 0, "승인 대기자는 목록을 못 본다");
+await fails(as(null, `select id from public.activities`), /permission denied/);
+await fails(as(BOB, `insert into public.activities (title, semester, category) values ('몰래', '2026-2', 'event')`), /row-level security/);
+const [{ id: ACT }] = await as(ALICE, `insert into public.activities (title, semester, category) values ('정기 안전점검', '2026-2', 'project') returning id`);
+const [{ id: HIDDEN_ACT }] = await as(ALICE, `insert into public.activities (title, semester, category, is_hidden) values ('옛 활동', '2020-1', 'event') returning id`).catch(() => [{}]);
+assert.equal(HIDDEN_ACT, undefined, "is_hidden은 등록할 때 직접 넣을 수 없다 (권한 없음)");
+const [{ id: OLD_ACT }] = await as(ALICE, `insert into public.activities (title, semester, category) values ('옛 활동', '2020-1', 'event') returning id`);
+await as(BOB, `update public.activities set is_hidden = true where id = $1`, [OLD_ACT]); // 회원은 0건 처리
+assert.equal((await db.query(`select is_hidden from public.activities where id = $1`, [OLD_ACT])).rows[0].is_hidden, false);
+
+// 11. 경험 카드: 임시 저장은 본인만, 완료 + 공개만 다른 회원이 본다.
+const QT = (await db.query(`select id from public.question_types order by sort_order`)).rows.map((r) => r.id);
+const TAG = (await db.query(`select id from public.competency_tags order by sort_order`)).rows.map((r) => r.id);
+await fails(as(EVE, `insert into public.experiences (is_draft) values (true)`), /row-level security/);
+await fails(as(BOB, `insert into public.experiences (user_id) values ($1)`, [ALICE]), /permission denied/);
+const [{ id: CARD }] = await as(BOB, `insert into public.experiences (is_draft) values (true) returning id`);
+const save = (who, o) =>
+  as(who, `select public.save_experience($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, [
+    o.id ?? CARD, o.type ?? "club", o.activity ?? ACT, o.title ?? "안전점검 프로젝트", null, null,
+    JSON.stringify(o.answers ?? [{ step: "situation", question: "q", answer: "a" }]),
+    o.visibility ?? "club", o.draft ?? true, o.qt ?? [QT[3]], o.tags ?? [TAG[0]],
+  ]);
+
+await save(BOB, { draft: true, qt: [] });
+assert.equal((await as(ALICE, `select id from public.experiences`)).length, 0, "임시 저장 카드는 공개여도 남이 못 본다");
+await fails(save(BOB, { draft: false, qt: [] }), /문항 유형을 하나 이상/);
+await fails(save(BOB, { draft: false, activity: OLD_ACT, qt: [QT[3]] }).then(async () => {
+  await db.exec(`update public.activities set is_hidden = true where id = ${OLD_ACT}`);
+  await save(BOB, { draft: false, activity: ACT });
+  await save(BOB, { draft: false, activity: OLD_ACT });
+}), /숨김 처리된 활동/);
+await save(BOB, { draft: false, qt: [QT[3], QT[6]], tags: [TAG[0], TAG[2]] });
+assert.equal((await as(ALICE, `select id from public.experiences`)).length, 1, "완료된 공개 카드는 회원이 본다");
+assert.equal((await as(ALICE, `select * from public.experience_question_types`)).length, 2);
+assert.equal((await as(EVE, `select id from public.experiences`)).length, 0, "승인 대기자는 못 본다");
+
+// 남의 카드는 고치거나 지울 수 없다 (0건 처리 또는 오류).
+await fails(save(ALICE, { title: "해킹" }), /찾을 수 없습니다/);
+await as(ALICE, `delete from public.experiences where id = $1`, [CARD]);
+await fails(as(ALICE, `insert into public.experience_tags values ($1, $2)`, [CARD, TAG[5]]), /row-level security/);
+await as(ALICE, `delete from public.experience_question_types where experience_id = $1`, [CARD]);
+assert.equal((await db.query(`select count(*)::int as n from public.experience_question_types where experience_id = $1`, [CARD])).rows[0].n, 2);
+
+// 비공개로 바꾸면 남에게 안 보인다.
+await save(BOB, { draft: false, visibility: "private", qt: [QT[3], QT[6]], tags: [TAG[0], TAG[2]] });
+assert.equal((await as(ALICE, `select id from public.experiences`)).length, 0);
+
+// 비활성화된 문항 유형: 이미 연결된 것은 남고, 새로 연결은 막힌다.
+await db.exec(`update public.question_types set is_active = false where id in (${QT[6]}, ${QT[7]})`);
+await save(BOB, { draft: false, qt: [QT[3], QT[6]], tags: [TAG[0]] });
+assert.deepEqual((await as(BOB, `select question_type_id from public.experience_question_types order by 1`)).map((r) => r.question_type_id), [QT[3], QT[6]]);
+assert.equal((await as(BOB, `select * from public.experience_tags`)).length, 1, "빠진 태그는 해제된다");
+await fails(save(BOB, { draft: false, qt: [QT[3], QT[7]] }), /사용하지 않는 문항 유형/);
+
+// 본인은 지울 수 있고, 연결도 함께 지워진다. 회원을 삭제하면 그 회원의 카드도 지워진다.
+await as(BOB, `delete from public.experiences where id = $1`, [CARD]);
+assert.equal((await db.query(`select count(*)::int as n from public.experience_question_types`)).rows[0].n, 0);
+await as(BOB, `insert into public.experiences (is_draft) values (true)`);
+await as(ALICE, `select public.remove_member($1)`, [BOB]);
+assert.equal((await db.query(`select count(*)::int as n from public.experiences`)).rows[0].n, 0);
+
+// 12. 정지 방지 Cron(service_role)은 읽을 수 있다.
 await db.exec(`set role service_role`);
 await db.query(`select count(*) from public.profiles`);
 await db.exec(`reset role`);

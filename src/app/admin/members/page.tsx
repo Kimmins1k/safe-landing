@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { requireStage, STATUS_LABEL, type MemberRole, type MemberStatus } from "@/lib/auth";
-import { ConfirmButton } from "../confirm-button";
+import { ConfirmButton } from "@/app/confirm-button";
 import { removeMember, setAdmin, updateStatus } from "./actions";
 
 type Member = {
