@@ -27,7 +27,7 @@ export async function updateProfile(_prev: MeState, formData: FormData): Promise
   return { savedAt: Date.now() }; // 저장할 때마다 값이 달라야 알림이 다시 뜬다
 }
 
-// 탈퇴: 로그인 계정을 지우면 프로필과 경험 카드가 함께 지워진다 (DB 연쇄 삭제).
+// 탈퇴: 로그인 계정을 지우면 프로필·자격증과 비공개·임시 경험 카드가 함께 지워진다. 공개로 완성한 카드는 작성자만 비워 남는다 (DB 트리거·외래키).
 // 계정 삭제는 서버 전용 키가 필요해서 여기서만 쓴다. 마지막 관리자는 DB 트리거가 막는다.
 export async function deleteAccount(formData: FormData) {
   const { supabase, userId, profile } = await requireStage("member");

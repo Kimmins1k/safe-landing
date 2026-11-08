@@ -47,7 +47,12 @@ async function Me({ searchParams }: Pick<PageProps<"/me">, "searchParams">) {
       <section className="space-y-3 card p-4">
         <h2 className="text-xl font-bold">탈퇴</h2>
         <p className="text-sm leading-relaxed">
-          탈퇴하면 로그인 계정, 내 정보, 경험 카드, 자격증·교육 기록이 <b>바로 삭제되고 되돌릴 수 없어요.</b> 다시 이용하려면 새로 가입하고 승인을 받아야 해요.
+          탈퇴하면 로그인 계정, 내 정보, 자격증·교육 기록, <b>비공개·임시 저장 경험 카드</b>가 <b>바로 삭제되고 되돌릴 수 없어요.</b> 다시
+          이용하려면 새로 가입하고 승인을 받아야 해요.
+        </p>
+        <p className="rounded-xl bg-navy-50 p-3 text-sm leading-relaxed">
+          <b>동아리원 공개</b>로 완성한 경험 카드는 후배들이 계속 볼 수 있도록 이름과 기수를 지우고 &quot;탈퇴한 회원&quot;으로 남아요. 남기고 싶지
+          않은 카드는 탈퇴 전에 비공개로 바꾸거나 지워 주세요.
         </p>
         <form action={deleteAccount} className="space-y-3">
           <fieldset className="space-y-1 text-sm">

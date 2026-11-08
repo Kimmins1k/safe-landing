@@ -34,6 +34,7 @@ export function OnboardingForm() {
           <li>수집 항목: 이름, 기수, 상태, 구글 이메일</li>
           <li>목적: 동아리원 확인과 가입 승인, 서비스 제공</li>
           <li>보관 기간: 탈퇴할 때까지 (거절되면 바로 삭제)</li>
+          <li>탈퇴해도 동아리원 공개로 완성한 경험 카드는 이름·기수를 지우고 &quot;탈퇴한 회원&quot;으로 남습니다.</li>
           <li>모든 정보는 승인된 동아리원에게만 보이고, 이메일은 임원진만 봅니다.</li>
         </ul>
         <Link href="/privacy" className="mt-2 inline-block underline">

@@ -23,7 +23,7 @@ export function CardLink({ card, showActivity = true }: { card: PublicCard; show
       <p className="text-sm text-navy-700">
         {card.type ? TYPE_LABEL[card.type] : "유형 미선택"}
         {showActivity && card.activities && ` · ${card.activities.semester} ${card.activities.title}`}
-        {card.profiles && ` · ${card.profiles.cohort}학번 ${card.profiles.name}`}
+        {card.profiles ? ` · ${card.profiles.cohort}학번 ${card.profiles.name}` : " · 탈퇴한 회원"}
       </p>
       {names.length > 0 && (
         <div className="flex flex-wrap gap-1 pt-1">

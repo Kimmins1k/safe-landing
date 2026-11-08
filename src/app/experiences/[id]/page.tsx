@@ -12,7 +12,7 @@ import { CopyButton } from "./copy-button";
 
 type Row = {
   id: string;
-  user_id: string;
+  user_id: string | null; // 탈퇴한 회원의 공개 카드는 비어 있다
   type: ExperienceType | null;
   title: string;
   start_date: string | null;
@@ -113,9 +113,9 @@ async function Detail({ params, searchParams }: Pick<PageProps<"/experiences/[id
           {period && ` · ${period}`}
         </p>
         <h1 className="text-2xl font-bold">{card.title || "(제목 없음)"}</h1>
-        {!mine && card.profiles && (
+        {!mine && (
           <p className="text-sm text-navy-700">
-            {card.profiles.cohort}학번 {card.profiles.name}님의 공개 카드 (읽기 전용)
+            {card.profiles ? `${card.profiles.cohort}학번 ${card.profiles.name}님` : "탈퇴한 회원"}의 공개 카드 (읽기 전용)
           </p>
         )}
         <div className="flex flex-wrap gap-1 pt-1">

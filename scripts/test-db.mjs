@@ -307,6 +307,16 @@ assert.equal((await db.query(`select count(*)::int as n from public.posts where 
 assert.equal((await db.query(`select count(*)::int as n from public.comments where author_id = $1`, [FRANK])).rows[0].n, 0);
 assert.equal((await comments(ALICE, G1)).length, 1, "남이 쓴 글의 다른 댓글은 그대로");
 
+// 탈퇴: 공개로 완성한 경험 카드만 작성자를 비우고 남기고, 비공개·임시 카드와 자격증 기록은 지운다.
+await as(FRANK, `insert into public.experiences (type, title, visibility, is_draft) values
+  ('club', '남길 공개 카드', 'club', false), ('club', '지울 비공개 카드', 'private', false), ('club', '지울 공개 임시 카드', 'club', true)`);
+await as(FRANK, `insert into public.credentials (kind, name, status, visibility) values ('certificate', '공개 자격증', 'preparing', 'club')`);
+await db.exec(`delete from auth.users where id = '${FRANK}'`);
+const leftCards = (await db.query(`select title, user_id from public.experiences where title in ('남길 공개 카드', '지울 비공개 카드', '지울 공개 임시 카드')`)).rows;
+assert.deepEqual(leftCards, [{ title: "남길 공개 카드", user_id: null }], "공개로 완성한 카드만 익명으로 남는다");
+assert.equal((await as(ADMIN, `select id from public.experiences where title = '남길 공개 카드'`)).length, 1, "남은 카드는 회원이 계속 읽는다");
+assert.equal((await db.query(`select count(*)::int as n from public.credentials where name = '공개 자격증'`)).rows[0].n, 0, "자격증 기록은 지운다");
+
 // 11-2. 탈퇴(계정 삭제): 관리자가 둘일 때는 한 명이 나갈 수 있고, 마지막 관리자는 DB가 막는다.
 await db.exec(`delete from auth.users where id = '${ALICE}'`);
 await fails(db.exec(`delete from auth.users where id = '${ADMIN}'`), /최소 1명/);

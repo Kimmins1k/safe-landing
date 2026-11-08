@@ -84,7 +84,7 @@ async function MemberList({ searchParams }: Pick<PageProps<"/admin/members">, "s
                 {m.role === "member" && !isMe && (
                   <form action={removeMember.bind(null, m.id)}>
                     <ConfirmButton
-                      message={`${m.name}님을 삭제할까요? 로그인 계정과 기록이 모두 지워지고 되돌릴 수 없어요.`}
+                      message={`${m.name}님을 삭제할까요? 로그인 계정과 기록이 지워지고 되돌릴 수 없어요. 공개로 완성한 경험 카드만 "탈퇴한 회원"으로 남아요.`}
                     >
                       회원 삭제
                     </ConfirmButton>
