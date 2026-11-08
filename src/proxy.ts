@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // 로그인 없이 열 수 있는 경로
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/api/keep-alive"];
+// 서비스 워커·앱 정보(manifest)는 휴대폰이 로그인 쿠키 없이 받아 갈 때가 있다.
+const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/api/keep-alive", "/sw.js", "/manifest.webmanifest"];
 
 // 세션을 갱신하고, 로그인하지 않았으면 로그인 화면으로 보낸다.
 // 승인 여부 같은 실제 권한 확인은 각 화면과 DB 규칙(RLS)이 한다.

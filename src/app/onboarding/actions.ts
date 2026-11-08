@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireStage, type MemberStatus } from "@/lib/auth";
+import { notifyAdmins } from "@/lib/push";
 
 const STATUSES: MemberStatus[] = ["enrolled", "on_leave", "graduated"];
 
@@ -23,6 +25,9 @@ export async function submitOnboarding(_prev: OnboardingState, formData: FormDat
   // role은 DB 기본값(pending)으로만 들어간다. 직접 넣을 권한이 없다.
   const { error } = await supabase.from("profiles").insert({ id: userId, name, cohort, status });
   if (error && error.code !== "23505") return { error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
+
+  // 새 신청일 때만 임원진 휴대폰에 알린다. 화면 이동을 기다리게 하지 않도록 응답을 보낸 뒤 보낸다.
+  if (!error) after(() => notifyAdmins({ title: "새 가입 신청", body: `${name} (${cohort}학번)님이 가입 승인을 기다려요.`, url: "/admin/approvals" }));
 
   redirect("/pending");
 }

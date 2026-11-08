@@ -326,4 +326,13 @@ await db.exec(`set role service_role`);
 await db.query(`select count(*) from public.profiles`);
 await db.exec(`reset role`);
 
+// 13. 푸시 알림 기기 목록: 회원·비로그인은 못 읽고 못 쓴다. 서버(service_role)만 다룬다.
+await db.exec(`set role service_role`);
+await db.query(`insert into public.push_subscriptions (endpoint, user_id, p256dh, auth) values ('https://push.example.com/1', $1, 'k', 'a')`, [ADMIN]);
+assert.equal((await db.query(`select p.role from public.push_subscriptions s join public.profiles p on p.id = s.user_id`)).rows[0].role, "admin");
+await db.exec(`reset role`);
+await fails(as(ADMIN, `select * from public.push_subscriptions`), /permission denied/);
+await fails(as(ADMIN, `insert into public.push_subscriptions (endpoint, user_id, p256dh, auth) values ('https://x', $1, 'k', 'a')`, [ADMIN]), /permission denied/);
+await fails(as(null, `select * from public.push_subscriptions`), /permission denied/);
+
 console.log("DB 보안 규칙 점검 통과");

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { requireStage, STATUS_LABEL, type MemberStatus } from "@/lib/auth";
 import { approveMember, rejectMember } from "./actions";
 import { ConfirmButton } from "@/app/confirm-button";
+import { PushToggle } from "./push-toggle";
 
 type PendingMember = {
   id: string;
@@ -17,6 +18,7 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">가입 승인</h1>
+      <PushToggle />
       <Suspense fallback={<PageSkeleton />}>
         <PendingList />
       </Suspense>

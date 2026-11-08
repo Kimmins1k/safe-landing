@@ -10,6 +10,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "세이프랜딩",
   description: "경험을 기록하고 자소서로 연결하는 동아리 취업 준비 공간",
+  appleWebApp: { title: "세이프랜딩" },
 };
 
 // 주소창 색을 헤더 네이비와 맞추고, 아이폰 홈 표시줄 영역(safe-area)을 쓸 수 있게 한다.
