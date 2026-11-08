@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/confirm-button";
+import { CommentForm } from "./comment-form";
 import { requireStage } from "@/lib/auth";
 import { authorLabel, BOARD_LABEL, type CommentRow, type PostDetail } from "@/lib/archive";
 import {
@@ -129,17 +130,7 @@ async function Detail({ params, searchParams }: Pick<PageProps<"/archive/[id]">,
           ))}
         </ul>
 
-        <form action={createComment.bind(null, p.id)} className="space-y-2 rounded-lg bg-navy-50 p-4">
-          <label className="block font-bold">
-            댓글 쓰기
-            <textarea name="body" required maxLength={2000} rows={3} className="mt-1 w-full rounded-lg border border-navy-100 bg-white px-3 py-2 font-normal" />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="anonymous" />
-            익명으로 쓰기 (관리자는 작성자를 확인할 수 있어요)
-          </label>
-          <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">댓글 올리기</button>
-        </form>
+        <CommentForm action={createComment.bind(null, p.id)} />
       </section>
     </article>
   );

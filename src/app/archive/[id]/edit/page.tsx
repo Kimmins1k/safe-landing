@@ -7,20 +7,19 @@ import { BOARD_LABEL, type PostDetail } from "@/lib/archive";
 import { updatePost } from "../../actions";
 import { PostForm } from "../../post-form";
 
-export default function EditPostPage({ params, searchParams }: PageProps<"/archive/[id]/edit">) {
+export default function EditPostPage({ params }: PageProps<"/archive/[id]/edit">) {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <Edit params={params} searchParams={searchParams} />
+      <Edit params={params} />
     </Suspense>
   );
 }
 
-async function Edit({ params, searchParams }: Pick<PageProps<"/archive/[id]/edit">, "params" | "searchParams">) {
+async function Edit({ params }: Pick<PageProps<"/archive/[id]/edit">, "params">) {
   const { id: idParam } = await params;
   if (!/^\d{1,15}$/.test(idParam)) notFound();
   const id = Number(idParam);
   const { supabase } = await requireStage("member");
-  const { error } = await searchParams;
 
   const { data } = await supabase.rpc("get_post", { p_id: id });
   const post = ((data ?? []) as PostDetail[])[0];
@@ -33,11 +32,6 @@ async function Edit({ params, searchParams }: Pick<PageProps<"/archive/[id]/edit
         ← 글로 돌아가기
       </Link>
       <h1 className="text-2xl font-bold">{BOARD_LABEL[post.board]} 고치기</h1>
-      {typeof error === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
-          {error}
-        </p>
-      )}
       <PostForm board={post.board} post={post} action={updatePost.bind(null, id, post.board)} />
     </div>
   );

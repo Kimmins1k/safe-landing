@@ -28,7 +28,7 @@ export default function HomePage() {
 
 type Card = { id: string; title: string; is_draft: boolean; experience_question_types: { question_type_id: number }[] };
 // 맨 위 "다음 할 일" 카드. 버튼은 링크(href)이거나 새 경험 만들기(create)다.
-type NextStep = { title: string; desc: string; cta: string; href?: string; create?: boolean };
+type NextStep = { title: string; desc: string; cta: string; href?: string; create?: boolean; qt?: number };
 
 const SENIOR_LINKS: [string, string, LucideIcon][] = [
   ["/activities", "동아리 활동", Flag],
@@ -85,9 +85,10 @@ async function Home() {
         : firstEmpty
           ? {
               title: `‘${firstEmpty.name}’ 문항이 비어 있어요`,
-              desc: "이 문항에 쓸 경험을 하나 기록해 두면 자소서를 쓸 때 막막하지 않아요.",
-              cta: "새 경험 쓰기",
+              desc: "이 문항에 쓸 경험을 하나 기록해 두면 자소서를 쓸 때 막막하지 않아요. 문항은 미리 골라 둘게요.",
+              cta: "이 문항으로 경험 쓰기",
               create: true,
+              qt: firstEmpty.id,
             }
           : unanswered[0]
             ? { title: "동아리원의 질문에 답해 주세요", desc: unanswered[0].title, cta: "답변하러 가기", href: `/archive/${unanswered[0].id}` }
@@ -140,6 +141,7 @@ async function Home() {
         </div>
         {next.create ? (
           <form action={createExperience}>
+            {next.qt && <input type="hidden" name="qt" value={next.qt} />}
             <button className={ctaClass}>
               <PenLine aria-hidden size={18} />
               {next.cta}

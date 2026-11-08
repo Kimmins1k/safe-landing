@@ -7,7 +7,7 @@ import { EmptyState } from "@/app/empty-state";
 import { requireStage } from "@/lib/auth";
 import { KIND_LABEL, STATUS_LABEL, type Credential } from "@/lib/credential";
 import { createCredential, deleteCredential, updateCredential } from "./actions";
-import { CredentialFields } from "./credential-fields";
+import { CredentialForm } from "./credential-form";
 
 export default function CredentialsPage({ searchParams }: PageProps<"/credentials">) {
   return (
@@ -44,11 +44,15 @@ async function List({ searchParams }: Pick<PageProps<"/credentials">, "searchPar
         </p>
       )}
 
-      <form action={createCredential} className="space-y-3 rounded-lg bg-navy-50 p-4">
-        <p className="font-bold">새 기록 추가</p>
-        <CredentialFields />
-        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">추가</button>
-      </form>
+      <section className="space-y-3 rounded-lg bg-navy-50 p-4">
+        <h2 className="font-bold">새 기록 추가</h2>
+        <CredentialForm
+          action={createCredential}
+          submitLabel="추가"
+          className="space-y-3"
+          buttonClass="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600"
+        />
+      </section>
 
       {items.length === 0 && (
         <EmptyState icon={Award} title="아직 기록이 없어요">
@@ -68,10 +72,13 @@ async function List({ searchParams }: Pick<PageProps<"/credentials">, "searchPar
                   {c.visibility === "club" && " · 동아리원 공개"}
                 </span>
               </summary>
-              <form action={updateCredential.bind(null, c.id)} className="mt-3 space-y-3">
-                <CredentialFields item={c} />
-                <button className="rounded-lg border border-navy-100 px-3 py-1 text-sm">수정 저장</button>
-              </form>
+              <CredentialForm
+                item={c}
+                action={updateCredential.bind(null, c.id)}
+                submitLabel="수정 저장"
+                className="mt-3 space-y-3"
+                buttonClass="rounded-lg border border-navy-100 px-3 py-1 text-sm"
+              />
             </details>
             <form action={deleteCredential.bind(null, c.id)} className="mt-2">
               <ConfirmButton message="이 기록을 지울까요? 되돌릴 수 없어요.">삭제</ConfirmButton>

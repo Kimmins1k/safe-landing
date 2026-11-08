@@ -48,10 +48,13 @@ function check(input: ExperienceInput): string | null {
   return null;
 }
 
-export async function createExperience() {
+export async function createExperience(formData?: FormData) {
   const { supabase } = await requireStage("member");
   const { data, error } = await supabase.from("experiences").insert({ is_draft: true }).select("id").single();
   if (error) throw new Error("경험 카드를 만들지 못했어요.");
+  // 홈의 "빈 문항" 버튼에서 왔으면 그 문항 유형을 미리 골라 둔다. 막히면(숨긴 문항 등) 작성 화면에서 고르면 되니 넘어간다.
+  const qt = Number(formData?.get("qt"));
+  if (Number.isSafeInteger(qt) && qt > 0) await supabase.from("experience_question_types").insert({ experience_id: data.id, question_type_id: qt });
   redirect(`/experiences/${data.id}/edit`);
 }
 

@@ -21,7 +21,7 @@ function readForm(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   if (title.length < 1 || title.length > 100) fail("활동명을 1~100자로 입력해 주세요.");
   if (semester.length < 1 || semester.length > 20) fail("학기를 입력해 주세요. 예: 2026-2");
-  if (!(category in ACTIVITY_CATEGORY_LABEL)) fail("분류를 골라 주세요.");
+  if (!Object.hasOwn(ACTIVITY_CATEGORY_LABEL, category)) fail("분류를 골라 주세요.");
   if (description.length > 2000) fail("설명은 2000자까지 쓸 수 있어요.");
   return { title, semester, category, description };
 }

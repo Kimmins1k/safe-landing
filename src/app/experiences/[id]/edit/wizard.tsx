@@ -75,10 +75,13 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
   const chainRef = useRef<Promise<unknown>>(Promise.resolve());
   const stepperRef = useRef<HTMLOListElement>(null);
   const dirty = JSON.stringify(card) !== saved;
+  const badDates = !!card.startDate && !!card.endDate && card.endDate < card.startDate;
 
   const answerSteps = card.answers.length;
-  const total = 2 + answerSteps + 2; // 유형, 제목·기간, 답변들, 문항 유형·태그, 공개 범위
-  const answerIndex = step - 2;
+  // 유형, 제목·기간, 문항 유형·태그(필수라 앞에 둔다), 답변들, 공개 범위
+  const QT_STEP = 2;
+  const total = 3 + answerSteps + 1;
+  const answerIndex = step - 3;
 
   function go(next: number) {
     setError("");
@@ -110,9 +113,10 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
     return run;
   }
 
-  // 임시 저장 카드: 입력이 멈추고 1.5초 뒤 자동 저장
+  // 임시 저장 카드: 입력이 멈추고 1.5초 뒤 자동 저장.
+  // 완료 저장·나가기 중에는 멈춘다. 늦게 끝난 자동 저장이 완료한 카드를 다시 임시 저장으로 되돌리지 않게 한다.
   useEffect(() => {
-    if (published || !dirty) return;
+    if (published || !dirty || busy) return;
     const timer = setTimeout(async () => {
       setStatus("저장 중…");
       const result = await save(card).catch(() => ({ error: "연결이 끊겼어요. 잠시 후 다시 저장할게요." }));
@@ -124,10 +128,57 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
   // 저장하지 않은 채 창을 닫거나 새로고침하면 브라우저가 한 번 묻는다.
   useEffect(() => {
     if (!dirty) return;
+    // 앱 안 링크(로고·메뉴 등)는 화면 안 이동이라 beforeunload가 안 걸리므로, 누르기 전에 따로 묻는다.
     const onLeave = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onClick = (e: MouseEvent) => {
+      const link = e.target instanceof Element ? e.target.closest("a[href]") : null;
+      if (!link || link.hasAttribute("data-leave") || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (!window.confirm("저장하지 않은 내용이 있어요. 이 화면을 나갈까요?")) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
     window.addEventListener("beforeunload", onLeave);
-    return () => window.removeEventListener("beforeunload", onLeave);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onLeave);
+      document.removeEventListener("click", onClick, true);
+    };
   }, [dirty]);
+
+  // 저장 안 된 내용은 이 탭에 따로 적어 둔다. 뒤로가기처럼 막을 수 없는 이동 뒤 다시 들어오면 되살릴 수 있다.
+  // 첫 실행에서는 남은 기록을 읽기만 하고 지우지 않는다 (되살릴지 묻는 중).
+  const backupKey = `experience-backup:${initial.id}`;
+  const [restore, setRestore] = useState<ExperienceInput | null>(null);
+  const checkedBackup = useRef(false);
+  useEffect(() => {
+    try {
+      if (!checkedBackup.current) {
+        checkedBackup.current = true;
+        const raw = sessionStorage.getItem(backupKey);
+        const found = raw && raw !== saved ? (JSON.parse(raw) as ExperienceInput) : null;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 탭 저장소는 서버에 없어서 화면을 그린 뒤에만 읽을 수 있다
+        if (found?.id === initial.id) setRestore(found);
+        return;
+      }
+      if (dirty) sessionStorage.setItem(backupKey, JSON.stringify(card));
+      else sessionStorage.removeItem(backupKey);
+    } catch {
+      // 비공개 창 등에서 저장소를 못 쓰면 되살리기만 빠진다.
+    }
+  }, [card, saved, dirty, backupKey, initial.id]);
+
+  function applyRestore(use: boolean) {
+    if (use && restore) {
+      setCard(restore);
+      setAnswersType(restore.type);
+    } else {
+      try {
+        sessionStorage.removeItem(backupKey);
+      } catch {}
+    }
+    setRestore(null);
+  }
 
   // 단계 칩 줄이 화면보다 길면, 지금 단계 칩이 보이도록 가로로 굴린다.
   useEffect(() => {
@@ -135,6 +186,21 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
   }, [step]);
 
   async function finish() {
+    // 빠진 항목이 있으면 그 단계로 데려간다. 날짜 오류는 날짜 칸 아래에 이미 안내가 있다.
+    const problem: [number, string] | null = !card.type
+      ? [0, "경험 유형을 골라 주세요."]
+      : !card.title.trim()
+        ? [1, "제목을 입력해 주세요."]
+        : badDates
+          ? [1, ""]
+          : card.questionTypeIds.length === 0
+            ? [QT_STEP, "자소서 문항 유형을 하나 이상 골라 주세요."]
+            : null;
+    if (problem) {
+      go(problem[0]);
+      setError(problem[1]);
+      return;
+    }
     setBusy(true);
     setError("");
     const result = await save(card, true).catch(() => ({ error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." }));
@@ -149,9 +215,15 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
 
   async function exit() {
     if (published && dirty) return setLeaving(true);
+    if (!published && badDates) return go(1); // 날짜가 틀리면 저장이 안 되니 고칠 곳으로 데려간다
     if (!published && dirty) {
       setBusy(true);
-      await save(card).catch(() => undefined);
+      const result = await save(card).catch(() => ({ error: "연결이 끊겨 저장하지 못했어요. 잠시 후 다시 눌러 주세요." }));
+      if (result.error) {
+        setError(result.error);
+        setBusy(false);
+        return;
+      }
     }
     router.push(published ? `/experiences/${card.id}` : "/experiences");
   }
@@ -159,10 +231,10 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
   const stepTitle = useMemo(() => {
     if (step === 0) return "어떤 경험인가요?";
     if (step === 1) return "제목과 기간";
+    if (step === QT_STEP) return "어떤 자소서 문항에 쓸 수 있을까요?";
     if (answerIndex < answerSteps) return card.answers[answerIndex].question;
-    if (step === total - 2) return "어떤 자소서 문항에 쓸 수 있을까요?";
     return "공개 범위";
-  }, [step, answerIndex, answerSteps, card.answers, total]);
+  }, [step, answerIndex, answerSteps, card.answers]);
 
   // 단계 칩: 이름과 채웠는지 여부. 모든 단계는 건너뛸 수 있으니 칩을 눌러 바로 이동한다.
   const extraCount = card.answers.filter((a) => a.step === "extra").length;
@@ -170,18 +242,21 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
   const steps = [
     { label: "유형", filled: !!card.type },
     { label: "제목·기간", filled: !!card.title.trim() },
+    { label: "문항 연결", filled: card.questionTypeIds.length > 0 },
     ...card.answers.map((a) => ({
       label: a.step === "extra" && extraCount > 1 ? `${STEP_LABEL.extra} ${++extraNo}` : STEP_LABEL[a.step],
       filled: !!a.answer.trim(),
     })),
-    { label: "문항 연결", filled: card.questionTypeIds.length > 0 },
     { label: "공개 범위", filled: false },
   ];
 
   const current = answerIndex >= 0 && answerIndex < answerSteps ? card.answers[answerIndex] : null;
   const isLast = step === total - 1;
   const emptyNow =
-    (step === 0 && !card.type) || (step === 1 && !card.title.trim()) || (current !== null && !current.answer.trim());
+    (step === 0 && !card.type) ||
+    (step === 1 && !card.title.trim()) ||
+    (step === QT_STEP && card.questionTypeIds.length === 0) ||
+    (current !== null && !current.answer.trim());
   const tip = current ? STEP_TIP[current.step] : undefined;
 
   return (
@@ -201,6 +276,18 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
           {published ? "나가기" : "나중에 이어 쓰기"}
         </button>
       </div>
+
+      {restore && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 rounded-2xl bg-safety-500/10 p-3 text-sm">
+          <span className="text-safety-700">저장하지 못하고 나간 수정 내용이 남아 있어요. 되살릴까요?</span>
+          <button type="button" onClick={() => applyRestore(true)} className="rounded-lg bg-navy-900 px-3 py-1 text-white">
+            되살리기
+          </button>
+          <button type="button" onClick={() => applyRestore(false)} className="rounded-lg border border-navy-100 bg-white px-3 py-1">
+            버리기
+          </button>
+        </div>
+      )}
 
       {/* 단계 칩 + 진행 막대 */}
       <nav aria-label="작성 단계">
@@ -237,6 +324,12 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
       {/* 단계가 바뀔 때마다 새로 그려서 들어오는 애니메이션을 다시 튼다 */}
       <section key={step} className={`space-y-5 ${dir === "next" ? "animate-step-next" : "animate-step-prev"}`}>
         <h1 className="text-xl font-bold text-balance">{stepTitle}</h1>
+        {/* 오류는 질문 바로 아래에 둔다. 아래쪽에 두면 긴 단계에서 화면 밖에 묻힌다. */}
+        {error && (
+          <p role="alert" className="rounded-xl bg-safety-500/10 p-3 text-sm text-safety-700">
+            {error}
+          </p>
+        )}
 
         {step === 0 && (
           <div className="space-y-4">
@@ -303,9 +396,21 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
               </label>
               <label className="block">
                 끝 (선택)
-                <input type="date" value={card.endDate ?? ""} onChange={(e) => update({ endDate: e.target.value || null })} className={inputClass} />
+                <input
+                  type="date"
+                  value={card.endDate ?? ""}
+                  min={card.startDate ?? undefined}
+                  onChange={(e) => update({ endDate: e.target.value || null })}
+                  aria-invalid={badDates || undefined}
+                  className={`${inputClass} aria-invalid:border-safety-700`}
+                />
               </label>
             </div>
+            {badDates && (
+              <p role="alert" className="text-sm text-safety-700">
+                끝난 날이 시작한 날보다 빨라요. 날짜를 고쳐야 저장돼요.
+              </p>
+            )}
           </div>
         )}
 
@@ -341,7 +446,7 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
           </div>
         )}
 
-        {step === total - 2 && (
+        {step === QT_STEP && (
           <div className="space-y-5">
             <div>
               <p className="mb-2 font-bold">
@@ -400,16 +505,10 @@ export function Wizard({ initial, storedType, activities, questionTypes, tags }:
         )}
       </section>
 
-      {error && (
-        <p role="alert" className="text-safety-700">
-          {error}
-        </p>
-      )}
-
       {leaving && (
         <div role="alert" className="flex flex-wrap items-center gap-2 rounded-2xl bg-safety-500/10 p-3 text-sm">
           <span className="text-safety-700">저장하지 않은 내용이 있어요. 저장하지 않고 나갈까요?</span>
-          <Link href={`/experiences/${card.id}`} className="rounded-lg border border-navy-100 bg-white px-3 py-1">
+          <Link href={`/experiences/${card.id}`} data-leave className="rounded-lg border border-navy-100 bg-white px-3 py-1">
             저장하지 않고 나가기
           </Link>
           <button type="button" onClick={() => setLeaving(false)} className="rounded-lg bg-navy-900 px-3 py-1 text-white">

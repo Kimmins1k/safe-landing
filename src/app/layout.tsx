@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={null}>
             <MemberNav />
           </Suspense>
-          <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-8 pb-8">{children}</main>
+          <main className="mx-auto w-full max-w-2xl flex-1 overflow-x-clip px-4 pt-8 pb-8">{children}</main>
         </div>
         <footer className="border-t border-navy-100 px-4 py-4 text-center text-sm text-navy-700">
           <Link href="/privacy" className="underline">

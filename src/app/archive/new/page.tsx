@@ -16,7 +16,7 @@ export default function NewPostPage({ searchParams }: PageProps<"/archive/new">)
 
 async function New({ searchParams }: Pick<PageProps<"/archive/new">, "searchParams">) {
   await requireStage("member");
-  const { board: boardParam, error } = await searchParams;
+  const { board: boardParam } = await searchParams;
   const board = parseBoard(boardParam);
 
   return (
@@ -25,11 +25,6 @@ async function New({ searchParams }: Pick<PageProps<"/archive/new">, "searchPara
         ← {BOARD_LABEL[board]}
       </Link>
       <h1 className="text-2xl font-bold">{BOARD_LABEL[board]} 쓰기</h1>
-      {typeof error === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
-          {error}
-        </p>
-      )}
       <PostForm board={board} action={createPost} />
     </div>
   );
