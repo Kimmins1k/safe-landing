@@ -212,6 +212,101 @@ await as(ALICE, `update public.credentials set name = '해킹'`); // 남의 기�
 await as(ALICE, `delete from public.credentials`);
 assert.equal((await db.query(`select count(*)::int as n from public.credentials`)).rows[0].n, 2);
 
+// 11-1b. 아카이브: 익명 보호, 숨김, 권한. 테이블은 직접 못 읽고 함수로만 다룬다.
+//        지금 관리자는 ALICE와 ADMIN, 일반 회원은 FRANK와 GRACE, 승인 대기는 EVE.
+const GRACE = "00000000-0000-0000-0000-0000000000a2";
+await db.exec(`insert into auth.users values ('${GRACE}', 'grace@example.com')`);
+await as(GRACE, `insert into public.profiles (id, name, cohort) values ($1, '그레이스', 2024)`, [GRACE]);
+await as(ALICE, `select public.set_member_role($1, 'member')`, [GRACE]);
+
+const post = (who, o = {}) =>
+  as(who, `select public.create_post($1, $2, $3, $4, $5, $6, $7, $8, $9) as id`, [
+    o.board ?? "qna", o.title ?? "제목", o.body ?? "본문", o.anon ?? false,
+    o.company ?? null, o.job ?? null, o.applied ?? null, o.result ?? null, o.consent ?? false,
+  ]).then((r) => r[0].id);
+const list = (who, board) => as(who, `select * from public.list_posts($1)`, [board]);
+const get = (who, id) => as(who, `select * from public.get_post($1)`, [id]);
+const comments = (who, id) => as(who, `select * from public.list_comments($1)`, [id]);
+
+// 테이블을 직접 읽거나 쓸 수 없다. 승인 대기자는 함수로도 못 쓴다.
+await fails(as(GRACE, `select * from public.posts`), /permission denied/);
+await fails(as(GRACE, `insert into public.posts (board, title, body) values ('tip', 'x', 'y')`), /permission denied/);
+await fails(as(null, `select * from public.list_posts('tip')`), /permission denied/);
+await fails(post(EVE), /승인된 회원/);
+assert.equal((await list(EVE, "qna")).length, 0, "승인 대기자는 목록을 못 본다");
+
+// 익명 글: 일반 회원에게는 작성자 정보가 내려가지 않고, 관리자는 볼 수 있다.
+const Q1 = await post(FRANK, { board: "qna", anon: true, title: "익명 질문" });
+const seenByGrace = (await list(GRACE, "qna"))[0];
+assert.equal(seenByGrace.author_name, null);
+assert.equal(seenByGrace.author_cohort, null);
+assert.equal(seenByGrace.is_mine, false);
+assert.equal((await get(GRACE, Q1))[0].author_name, null);
+assert.equal((await list(ALICE, "qna"))[0].author_name, "프랭크", "관리자는 익명 작성자를 확인한다");
+assert.equal((await list(FRANK, "qna"))[0].is_mine, true);
+const NAMED = await post(FRANK, { board: "tip", title: "실명 팁" });
+assert.equal((await list(GRACE, "tip"))[0].author_name, "프랭크");
+
+// 익명 댓글도 같다. 숨김 댓글은 작성자·관리자만 본다.
+await as(GRACE, `select public.create_comment($1, '익명 답변', true)`, [Q1]);
+await as(GRACE, `select public.create_comment($1, '실명 답변', false)`, [Q1]);
+const seenByFrank = await comments(FRANK, Q1);
+assert.equal(seenByFrank[0].author_name, null);
+assert.equal(seenByFrank[1].author_name, "그레이스");
+assert.equal((await comments(ALICE, Q1))[0].author_name, "그레이스");
+assert.equal(Number((await list(GRACE, "qna"))[0].comment_count), 2);
+const [{ id: C1 }] = seenByFrank;
+await fails(as(FRANK, `select public.set_comment_hidden($1, true)`, [C1]), /관리자만/);
+await as(ALICE, `select public.set_comment_hidden($1, true)`, [C1]);
+assert.equal((await comments(FRANK, Q1)).length, 1, "숨긴 댓글은 남에게 안 보인다");
+assert.equal((await comments(GRACE, Q1)).length, 2, "작성자 본인은 본다");
+assert.equal((await comments(ALICE, Q1)).length, 2, "관리자는 본다");
+await fails(as(FRANK, `select public.delete_comment($1)`, [C1]), /지울 수 없는/);
+await as(GRACE, `select public.delete_comment($1)`, [C1]);
+
+// 후기: 공개 동의와 회사·직무가 있어야 한다. 후기가 아니면 회사·직무는 저장하지 않는다.
+await fails(post(FRANK, { board: "review", company: "A사", job: "생산" }), /동의/);
+await fails(post(FRANK, { board: "review", consent: true }), /check constraint/);
+const R1 = await post(FRANK, { board: "review", company: "A사", job: "안전관리", applied: "2027 상반기", result: "최종 합격", consent: true });
+assert.equal((await get(GRACE, R1))[0].company, "A사");
+const T1 = await post(FRANK, { board: "tip", company: "B사", job: "x" });
+assert.equal((await get(GRACE, T1))[0].company, null);
+
+// 수정은 작성자만, 삭제는 작성자와 관리자, 숨김은 관리자만.
+await fails(as(GRACE, `select public.update_post($1, '해킹', '해킹', false, null, null, null, null)`, [T1]), /고칠 수 없는/);
+await as(FRANK, `select public.update_post($1, '고친 제목', '고친 본문', false, null, null, null, null)`, [T1]);
+assert.equal((await get(GRACE, T1))[0].title, "고친 제목");
+await fails(as(GRACE, `select public.delete_post($1)`, [T1]), /지울 수 없는/);
+await fails(as(FRANK, `select public.set_post_hidden($1, true)`, [T1]), /관리자만/);
+await as(ALICE, `select public.set_post_hidden($1, true)`, [T1]);
+assert.equal((await get(GRACE, T1)).length, 0, "숨긴 글은 남에게 안 보인다");
+assert.equal((await list(GRACE, "tip")).length, 1, "목록에서도 빠진다 (남은 글은 NAMED 하나)");
+assert.equal((await get(FRANK, T1)).length, 1, "작성자는 본다");
+assert.equal((await get(ALICE, T1)).length, 1, "관리자는 본다");
+await fails(as(GRACE, `select public.create_comment($1, '숨긴 글 댓글', false)`, [T1]), /쓸 수 없는/);
+await as(ALICE, `select public.delete_post($1)`, [T1]); // 관리자는 남의 글도 지운다
+
+// 답변 완료: 질문한 사람만, 질문 게시판에서만.
+await fails(as(GRACE, `select public.set_post_answered($1, true)`, [Q1]), /바꿀 수 없는/);
+await as(FRANK, `select public.set_post_answered($1, true)`, [Q1]);
+assert.equal((await get(GRACE, Q1))[0].is_answered, true);
+await fails(as(FRANK, `select public.set_post_answered($1, true)`, [NAMED]), /바꿀 수 없는/);
+
+// 탈퇴: 남기기를 고르면 작성자만 비워지고, 지우기를 고르면 글·댓글이 모두 사라진다.
+const G1 = await post(GRACE, { board: "tip", title: "남길 글" });
+await as(GRACE, `select public.create_comment($1, '남길 댓글', false)`, [G1]);
+await db.exec(`delete from auth.users where id = '${GRACE}'`);
+const kept = (await list(ALICE, "tip")).find((p) => p.title === "남길 글");
+assert.equal(kept.is_withdrawn, true);
+assert.equal(kept.author_name, null);
+assert.equal((await comments(ALICE, G1))[0].is_withdrawn, true);
+
+await as(FRANK, `select public.create_comment($1, '지울 댓글', false)`, [G1]);
+await as(FRANK, `select public.delete_my_archive()`);
+assert.equal((await db.query(`select count(*)::int as n from public.posts where author_id = $1`, [FRANK])).rows[0].n, 0);
+assert.equal((await db.query(`select count(*)::int as n from public.comments where author_id = $1`, [FRANK])).rows[0].n, 0);
+assert.equal((await comments(ALICE, G1)).length, 1, "남이 쓴 글의 다른 댓글은 그대로");
+
 // 11-2. 탈퇴(계정 삭제): 관리자가 둘일 때는 한 명이 나갈 수 있고, 마지막 관리자는 DB가 막는다.
 await db.exec(`delete from auth.users where id = '${ALICE}'`);
 await fails(db.exec(`delete from auth.users where id = '${ADMIN}'`), /최소 1명/);

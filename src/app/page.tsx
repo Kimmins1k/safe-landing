@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import type { PostRow } from "@/lib/archive";
 import { requireStage, STATUS_LABEL } from "@/lib/auth";
 import { SignOutButton } from "./sign-out-button";
 
@@ -16,6 +17,9 @@ async function Home() {
   if (!profile) return null;
   const { data: cards } = await supabase.from("experiences").select("is_draft").eq("user_id", userId);
   const drafts = (cards ?? []).filter((c) => c.is_draft).length;
+  // 답변이 없는 질문을 홈에 보여 줘서 답변이 달리게 한다 (알림이 없으므로).
+  const { data: questions } = await supabase.rpc("list_posts", { p_board: "qna", p_limit: 30 });
+  const unanswered = ((questions ?? []) as PostRow[]).filter((q) => !q.is_answered && !q.is_hidden).slice(0, 3);
   const { count: credentialCount } = await supabase
     .from("credentials")
     .select("id", { count: "exact", head: true })
@@ -27,7 +31,6 @@ async function Home() {
         {profile.cohort}학번 · {STATUS_LABEL[profile.status]}
         {profile.role === "admin" && " · 관리자"}
       </p>
-      {/* shortcut: 아카이브 홈 요약은 아카이브를 만들 때 채운다 */}
       <div className="space-y-2 rounded-lg bg-navy-50 p-4">
         <p>
           내 경험 카드 <b>{(cards ?? []).length}개</b>
@@ -57,8 +60,25 @@ async function Home() {
           <Link href="/experiences/shared" className="underline">
             공개 경험 목록
           </Link>
+          <Link href="/archive" className="underline">
+            선배 아카이브
+          </Link>
         </div>
       </div>
+      {unanswered.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-safety-500 p-4">
+          <p className="font-bold">답변을 기다리는 질문</p>
+          <ul className="space-y-1 text-sm">
+            {unanswered.map((q) => (
+              <li key={q.id}>
+                <Link href={`/archive/${q.id}`} className="underline">
+                  {q.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {profile.role === "admin" && (
         <Link href="/admin/approvals" className="inline-block font-bold text-safety-600 underline">
           관리자 메뉴 (가입 승인 · 회원 · 활동 · 태그·문항 유형)

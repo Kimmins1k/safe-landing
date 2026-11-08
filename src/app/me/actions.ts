@@ -29,7 +29,7 @@ export async function updateProfile(_prev: MeState, formData: FormData): Promise
 
 // 탈퇴: 로그인 계정을 지우면 프로필과 경험 카드가 함께 지워진다 (DB 연쇄 삭제).
 // 계정 삭제는 서버 전용 키가 필요해서 여기서만 쓴다. 마지막 관리자는 DB 트리거가 막는다.
-export async function deleteAccount() {
+export async function deleteAccount(formData: FormData) {
   const { supabase, userId, profile } = await requireStage("member");
 
   if (profile?.role === "admin") {
@@ -37,6 +37,12 @@ export async function deleteAccount() {
     if ((count ?? 0) <= 1) {
       redirect(`/me?error=${encodeURIComponent("마지막 관리자는 탈퇴할 수 없어요. 먼저 다른 회원에게 관리자 권한을 넘겨 주세요.")}`);
     }
+  }
+
+  // 아카이브 글·댓글: 기본은 남기기(작성자가 "탈퇴한 회원"으로 바뀜). 지우기를 골랐으면 계정을 지우기 전에 먼저 지운다.
+  if (formData.get("archive") === "delete") {
+    const { error: archiveError } = await supabase.rpc("delete_my_archive");
+    if (archiveError) redirect(`/me?error=${encodeURIComponent("글·댓글을 지우지 못해 탈퇴를 멈췄어요. 잠시 후 다시 시도해 주세요.")}`);
   }
 
   const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
