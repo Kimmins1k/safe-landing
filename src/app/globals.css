@@ -92,6 +92,18 @@
     }
   }
 
+  /* iOS 사파리는 날짜 칸에 고유 최소 너비를 줘서 w-full을 무시하고 칸 밖으로 밀려난다.
+     기본 모양을 끄고 최소 너비를 0으로 풀면 부모 폭에 맞춰 줄어든다. 빈 칸 높이가 납작해지는 것도 막는다 */
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    min-height: 2.625rem;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+
   /* 키보드로 이동할 때만 보이는 포커스 표시. 네이비·흰 바탕 모두에서 3:1 이상 */
   :focus-visible {
     outline: 2px solid var(--color-safety-700);
