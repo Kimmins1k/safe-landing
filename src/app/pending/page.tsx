@@ -1,10 +1,11 @@
+import { PageSkeleton } from "@/app/skeleton";
 import { Suspense } from "react";
 import { requireStage } from "@/lib/auth";
 import { SignOutButton } from "../sign-out-button";
 
 export default function PendingPage() {
   return (
-    <Suspense fallback={<p>불러오는 중…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <Pending />
     </Suspense>
   );

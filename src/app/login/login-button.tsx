@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const buttonClass =
-  "w-full rounded-lg bg-safety-500 px-4 py-3 font-bold text-white hover:bg-safety-600 disabled:opacity-60";
+  "w-full rounded-lg bg-safety-500 px-4 py-3 font-bold text-navy-900 hover:bg-safety-600 disabled:opacity-60";
 
 export function LoginButton({ mode }: { mode: "google" | "copy" }) {
   const [message, setMessage] = useState("");

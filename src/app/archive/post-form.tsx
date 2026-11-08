@@ -62,7 +62,7 @@ export function PostForm({
         </label>
       )}
 
-      <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600">
+      <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">
         {post ? "저장" : `${BOARD_LABEL[board]} 올리기`}
       </button>
     </form>

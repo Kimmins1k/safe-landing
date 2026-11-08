@@ -18,7 +18,7 @@ export const PUBLIC_CARD_COLUMNS =
 export function CardLink({ card, showActivity = true }: { card: PublicCard; showActivity?: boolean }) {
   const names = card.experience_question_types.flatMap((l) => (l.question_types ? [l.question_types.name] : []));
   return (
-    <Link href={`/experiences/${card.id}`} className="block rounded-lg border border-navy-100 p-4 hover:border-navy-700">
+    <Link href={`/experiences/${card.id}`} className="block card card-hover p-4">
       <p className="font-bold">{card.title || "(제목 없음)"}</p>
       <p className="text-sm text-navy-700">
         {card.type ? TYPE_LABEL[card.type] : "유형 미선택"}

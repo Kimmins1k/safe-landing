@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import { Suspense } from "react";
 import { requireStage, STATUS_LABEL, type MemberRole, type MemberStatus } from "@/lib/auth";
 import { ConfirmButton } from "@/app/confirm-button";
@@ -18,7 +19,7 @@ export default function MembersPage({ searchParams }: PageProps<"/admin/members"
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">회원 관리</h1>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <MemberList searchParams={searchParams} />
       </Suspense>
     </div>
@@ -35,7 +36,7 @@ async function MemberList({ searchParams }: Pick<PageProps<"/admin/members">, "s
   return (
     <>
       {typeof errorMessage === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {errorMessage}
         </p>
       )}
@@ -44,13 +45,13 @@ async function MemberList({ searchParams }: Pick<PageProps<"/admin/members">, "s
         {members.map((m) => {
           const isMe = m.id === userId;
           return (
-            <li key={m.id} className="space-y-3 rounded-lg border border-navy-100 p-4">
+            <li key={m.id} className="space-y-3 card p-4">
               <div>
                 <p className="font-bold">
                   {m.name}
                   {isMe && <span className="font-normal text-navy-700"> (나)</span>}
                   {m.role === "admin" && (
-                    <span className="ml-2 rounded bg-safety-500 px-2 py-0.5 text-xs text-white">관리자</span>
+                    <span className="ml-2 rounded bg-safety-500 px-2 py-0.5 text-xs text-navy-900">관리자</span>
                   )}
                 </p>
                 <p className="text-sm text-navy-700">

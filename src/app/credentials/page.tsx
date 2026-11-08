@@ -1,6 +1,9 @@
+import { PageSkeleton } from "@/app/skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/confirm-button";
+import { Award } from "lucide-react";
+import { EmptyState } from "@/app/empty-state";
 import { requireStage } from "@/lib/auth";
 import { KIND_LABEL, STATUS_LABEL, type Credential } from "@/lib/credential";
 import { createCredential, deleteCredential, updateCredential } from "./actions";
@@ -13,7 +16,7 @@ export default function CredentialsPage({ searchParams }: PageProps<"/credential
         ← 홈
       </Link>
       <h1 className="text-2xl font-bold">자격증·교육</h1>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <List searchParams={searchParams} />
       </Suspense>
     </div>
@@ -36,7 +39,7 @@ async function List({ searchParams }: Pick<PageProps<"/credentials">, "searchPar
   return (
     <>
       {typeof errorMessage === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {errorMessage}
         </p>
       )}
@@ -44,13 +47,17 @@ async function List({ searchParams }: Pick<PageProps<"/credentials">, "searchPar
       <form action={createCredential} className="space-y-3 rounded-lg bg-navy-50 p-4">
         <p className="font-bold">새 기록 추가</p>
         <CredentialFields />
-        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600">추가</button>
+        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">추가</button>
       </form>
 
-      {items.length === 0 && <p>아직 기록이 없어요. 준비 중인 자격증도 먼저 남겨 두세요.</p>}
+      {items.length === 0 && (
+        <EmptyState icon={Award} title="아직 기록이 없어요">
+          <p>준비 중인 자격증도 위에서 먼저 남겨 두세요.</p>
+        </EmptyState>
+      )}
       <ul className="space-y-3">
         {items.map((c) => (
-          <li key={c.id} className="rounded-lg border border-navy-100 p-4">
+          <li key={c.id} className="card p-4">
             <details>
               <summary className="cursor-pointer">
                 <span className="font-bold">{c.name}</span>

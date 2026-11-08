@@ -1,5 +1,8 @@
+import { PageSkeleton } from "@/app/skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Flag } from "lucide-react";
+import { EmptyState } from "@/app/empty-state";
 import { requireStage } from "@/lib/auth";
 import { ACTIVITY_CATEGORY_LABEL, type ActivityCategory } from "@/lib/experience";
 
@@ -13,7 +16,7 @@ export default function ActivitiesPage() {
       </Link>
       <h1 className="text-2xl font-bold">동아리 활동</h1>
       <p className="text-sm text-navy-700">활동을 누르면 선배·동기가 이 활동을 자소서에 어떻게 썼는지 볼 수 있어요.</p>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <List />
       </Suspense>
     </div>
@@ -38,13 +41,18 @@ async function List() {
   for (const c of cards.data ?? []) counts.set(c.activity_id, (counts.get(c.activity_id) ?? 0) + 1);
   const rows = (activities.data ?? []) as Row[];
 
-  if (rows.length === 0) return <p className="rounded-lg bg-navy-50 p-4">아직 등록된 활동이 없어요. 임원진이 등록하면 여기에 보여요.</p>;
+  if (rows.length === 0)
+    return (
+      <EmptyState icon={Flag} title="아직 등록된 활동이 없어요">
+        <p>임원진이 활동을 등록하면 여기에 보여요.</p>
+      </EmptyState>
+    );
 
   return (
     <ul className="space-y-2">
       {rows.map((a) => (
         <li key={a.id}>
-          <Link href={`/activities/${a.id}`} className="block rounded-lg border border-navy-100 p-4 hover:border-navy-700">
+          <Link href={`/activities/${a.id}`} className="block card card-hover p-4">
             <p className="font-bold">{a.title}</p>
             <p className="text-sm text-navy-700">
               {a.semester} · {ACTIVITY_CATEGORY_LABEL[a.category]} · 공개 경험 {counts.get(a.id) ?? 0}개

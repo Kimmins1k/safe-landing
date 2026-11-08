@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import { Suspense } from "react";
 import { requireStage } from "@/lib/auth";
 import { ACTIVITY_CATEGORY_LABEL, type ActivityCategory } from "@/lib/experience";
@@ -48,7 +49,7 @@ export default function ActivitiesPage({ searchParams }: PageProps<"/admin/activ
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">활동 관리</h1>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <ActivityList searchParams={searchParams} />
       </Suspense>
     </div>
@@ -69,7 +70,7 @@ async function ActivityList({ searchParams }: Pick<PageProps<"/admin/activities"
   return (
     <>
       {typeof errorMessage === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {errorMessage}
         </p>
       )}
@@ -77,7 +78,7 @@ async function ActivityList({ searchParams }: Pick<PageProps<"/admin/activities"
       <form action={createActivity} className="space-y-3 rounded-lg bg-navy-50 p-4">
         <p className="font-bold">새 활동 등록</p>
         <ActivityFields />
-        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600">등록</button>
+        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">등록</button>
       </form>
 
       <p className="text-sm text-navy-700">
@@ -86,7 +87,7 @@ async function ActivityList({ searchParams }: Pick<PageProps<"/admin/activities"
       {activities.length === 0 && <p>아직 등록된 활동이 없어요. 과거 기수의 활동도 미리 등록해 두세요.</p>}
       <ul className="space-y-3">
         {activities.map((a) => (
-          <li key={a.id} className={`rounded-lg border border-navy-100 p-4 ${a.is_hidden ? "opacity-60" : ""}`}>
+          <li key={a.id} className={`card p-4 ${a.is_hidden ? "opacity-60" : ""}`}>
             <details>
               <summary className="cursor-pointer">
                 <span className="font-bold">{a.title}</span>

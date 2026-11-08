@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { LoginButton } from "./login-button";
@@ -10,7 +11,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">세이프랜딩에 오신 것을 환영해요</h1>
       <p>경험을 질문에 답하듯 기록하고, 자소서 문항과 연결해 두는 동아리 공간입니다.</p>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <LoginError searchParams={searchParams} />
         <LoginArea />
       </Suspense>
@@ -21,7 +22,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 async function LoginError({ searchParams }: Pick<PageProps<"/login">, "searchParams">) {
   if (!(await searchParams).error) return null;
   return (
-    <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+    <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
       로그인을 마치지 못했어요. 다시 시도해 주세요. 계속 안 되면 임원진에게 알려 주세요.
     </p>
   );

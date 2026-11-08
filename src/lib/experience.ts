@@ -6,6 +6,24 @@ export type Step = "situation" | "task" | "action" | "result" | "reflection" | "
 export type Answer = { step: Step; question: string; answer: string };
 type Question = { step: Step; question: string; example: string };
 
+export const STEP_LABEL: Record<Step, string> = {
+  situation: "상황",
+  task: "역할·과제",
+  action: "행동",
+  result: "결과",
+  reflection: "배운 점",
+  extra: "추가 질문",
+};
+
+// 작성 화면에서 답변칸 아래에 보여 주는 한 줄 팁
+export const STEP_TIP: Partial<Record<Step, string>> = {
+  situation: "언제·어디서·무슨 일이었는지 한두 문장이면 충분해요.",
+  task: "“저는 ~을 맡았습니다”로 시작하면 역할이 분명해져요.",
+  action: "‘우리’보다 ‘제가’ 한 일을 구체적으로 써 주세요.",
+  result: "건수·%·시간처럼 숫자로 쓰면 설득력이 커져요.",
+  reflection: "생산·안전관리 직무와 이어지는 배운 점이면 더 좋아요.",
+};
+
 export const TYPE_LABEL: Record<ExperienceType, string> = {
   club: "동아리 활동",
   class_project: "수업·팀 프로젝트",

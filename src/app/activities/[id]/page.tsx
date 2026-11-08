@@ -1,15 +1,19 @@
+import { PageSkeleton } from "@/app/skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { requireStage } from "@/lib/auth";
 import { ACTIVITY_CATEGORY_LABEL, type ActivityCategory } from "@/lib/experience";
 import { CardLink, PUBLIC_CARD_COLUMNS, type PublicCard } from "@/app/experiences/card-link";
+import { createExperienceForActivity } from "@/app/experiences/actions";
+import { EmptyState } from "@/app/empty-state";
+import { PenLine, Users } from "lucide-react";
 
 type Activity = { id: number; title: string; semester: string; category: ActivityCategory; description: string; is_hidden: boolean };
 
 export default function ActivityPage({ params }: PageProps<"/activities/[id]">) {
   return (
-    <Suspense fallback={<p>불러오는 중…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <Detail params={params} />
     </Suspense>
   );
@@ -62,12 +66,27 @@ async function Detail({ params }: Pick<PageProps<"/activities/[id]">, "params">)
         {a.description && <p className="whitespace-pre-line pt-2">{a.description}</p>}
       </header>
 
+      {/* 선배 사례를 보다가 바로 내 기록으로 넘어가게 한다. 숨긴 활동에는 새 카드를 연결할 수 없다. */}
+      {!a.is_hidden && (
+        <form action={createExperienceForActivity.bind(null, a.id)} className="card flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-sm">
+            <b className="block text-base">나도 이 활동을 했다면?</b>
+            유형과 활동이 미리 골라진 채로 경험 카드를 시작해요.
+          </p>
+          <button className="flex w-full items-center justify-center gap-1 rounded-xl bg-safety-500 px-4 py-2.5 font-bold text-navy-900 hover:bg-safety-600 sm:w-fit">
+            <PenLine aria-hidden size={18} />이 활동으로 내 경험 쓰기
+          </button>
+        </form>
+      )}
+
       <section className="space-y-4">
         <h2 className="text-xl font-bold">선배·동기는 이렇게 썼어요</h2>
         {shared.length === 0 ? (
-          <p className="rounded-lg bg-navy-50 p-4">
-            아직 이 활동의 공개 경험이 없어요. 이 활동으로 경험 카드를 쓰고 <b>동아리원 공개</b>로 바꾸면 여기에 보여요.
-          </p>
+          <EmptyState icon={Users} title="아직 이 활동의 공개 경험이 없어요">
+            <p>
+              이 활동으로 경험 카드를 쓰고 <b>동아리원 공개</b>로 바꾸면 여기에 보여요. 첫 사례가 되어 주세요.
+            </p>
+          </EmptyState>
         ) : (
           sorted.map((g) => (
             <div key={g.name} className="space-y-2">

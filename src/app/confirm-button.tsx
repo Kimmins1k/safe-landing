@@ -18,7 +18,7 @@ export function ConfirmButton({ message, children }: { message: string; children
 
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-safety-600">{message}</span>
+      <span className="text-sm text-safety-700">{message}</span>
       <button type="submit" disabled={pending} className="rounded-lg bg-navy-900 px-3 py-1 text-white disabled:opacity-60">
         {pending ? "처리 중…" : `${children} 확정`}
       </button>

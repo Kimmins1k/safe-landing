@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { requireStage } from "@/lib/auth";
@@ -20,7 +21,7 @@ type Row = {
 
 export default function EditExperiencePage({ params }: PageProps<"/experiences/[id]/edit">) {
   return (
-    <Suspense fallback={<p>불러오는 중…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <Edit params={params} />
     </Suspense>
   );

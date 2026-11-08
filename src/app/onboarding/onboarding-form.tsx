@@ -46,13 +46,13 @@ export function OnboardingForm() {
       </label>
 
       {state.error && (
-        <p role="alert" className="text-safety-600">
+        <p role="alert" className="text-safety-700">
           {state.error}
         </p>
       )}
       <button
         disabled={pending}
-        className="w-full rounded-lg bg-safety-500 px-4 py-3 font-bold text-white hover:bg-safety-600 disabled:opacity-60"
+        className="w-full rounded-lg bg-safety-500 px-4 py-3 font-bold text-navy-900 hover:bg-safety-600 disabled:opacity-60"
       >
         가입 신청하기
       </button>

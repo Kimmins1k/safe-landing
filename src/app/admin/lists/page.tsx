@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import { Suspense } from "react";
 import { requireStage } from "@/lib/auth";
 import { createItem, setItemActive, updateItem, type ListTable } from "./actions";
@@ -48,11 +49,11 @@ function Section({ title, table, items }: { title: string; table: ListTable; ite
       <form action={createItem.bind(null, table)} className="space-y-3 rounded-lg bg-navy-50 p-4">
         <p className="font-bold">새로 추가</p>
         <Fields table={table} />
-        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600">추가</button>
+        <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">추가</button>
       </form>
       <ul className="space-y-3">
         {items.map((item) => (
-          <li key={item.id} className={`rounded-lg border border-navy-100 p-4 ${item.is_active ? "" : "opacity-60"}`}>
+          <li key={item.id} className={`card p-4 ${item.is_active ? "" : "opacity-60"}`}>
             <details>
               <summary className="cursor-pointer">
                 <span className="font-bold">{item.name}</span>
@@ -82,7 +83,7 @@ export default function ListsPage({ searchParams }: PageProps<"/admin/lists">) {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">태그·문항 유형 관리</h1>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <Lists searchParams={searchParams} />
       </Suspense>
     </div>
@@ -106,7 +107,7 @@ async function Lists({ searchParams }: Pick<PageProps<"/admin/lists">, "searchPa
   return (
     <>
       {typeof errorMessage === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {errorMessage}
         </p>
       )}

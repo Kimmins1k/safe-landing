@@ -1,6 +1,8 @@
+import { PageSkeleton } from "@/app/skeleton";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ConfirmButton } from "@/app/confirm-button";
+import { SignOutButton } from "@/app/sign-out-button";
 import { requireStage } from "@/lib/auth";
 import { deleteAccount } from "./actions";
 import { ProfileForm } from "./profile-form";
@@ -12,7 +14,7 @@ export default function MePage({ searchParams }: PageProps<"/me">) {
         ← 홈
       </Link>
       <h1 className="text-2xl font-bold">마이페이지</h1>
-      <Suspense fallback={<p>불러오는 중…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <Me searchParams={searchParams} />
       </Suspense>
     </div>
@@ -27,7 +29,7 @@ async function Me({ searchParams }: Pick<PageProps<"/me">, "searchParams">) {
   return (
     <>
       {typeof error === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {error}
         </p>
       )}
@@ -37,7 +39,12 @@ async function Me({ searchParams }: Pick<PageProps<"/me">, "searchParams">) {
         <ProfileForm name={profile.name} cohort={profile.cohort} status={profile.status} />
       </section>
 
-      <section className="space-y-3 rounded-lg border border-navy-100 p-4">
+      <section className="card flex flex-wrap items-center justify-between gap-2 p-4">
+        <p className="text-sm text-navy-700">이 기기에서 로그아웃해요.</p>
+        <SignOutButton />
+      </section>
+
+      <section className="space-y-3 card p-4">
         <h2 className="text-xl font-bold">탈퇴</h2>
         <p className="text-sm leading-relaxed">
           탈퇴하면 로그인 계정, 내 정보, 경험 카드, 자격증·교육 기록이 <b>바로 삭제되고 되돌릴 수 없어요.</b> 다시 이용하려면 새로 가입하고 승인을 받아야 해요.

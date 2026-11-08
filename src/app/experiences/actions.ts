@@ -55,6 +55,20 @@ export async function createExperience() {
   redirect(`/experiences/${data.id}/edit`);
 }
 
+// 활동 상세의 "이 활동으로 내 경험 쓰기": 유형(동아리 활동)과 활동을 미리 고른 임시 카드를 만든다.
+// 숨긴 활동이나 없는 활동은 DB 트리거(check_new_links)가 막는다.
+export async function createExperienceForActivity(activityId: number) {
+  if (!Number.isSafeInteger(activityId) || activityId <= 0) throw new Error("활동을 찾지 못했어요.");
+  const { supabase } = await requireStage("member");
+  const { data, error } = await supabase
+    .from("experiences")
+    .insert({ is_draft: true, type: "club", activity_id: activityId })
+    .select("id")
+    .single();
+  if (error) throw new Error("경험 카드를 만들지 못했어요.");
+  redirect(`/experiences/${data.id}/edit`);
+}
+
 export async function saveExperience(input: ExperienceInput): Promise<{ error?: string }> {
   const message = check(input);
   if (message) return { error: message };

@@ -7,7 +7,7 @@ import { requireStage, type MemberStatus } from "@/lib/auth";
 
 const STATUSES: MemberStatus[] = ["enrolled", "on_leave", "graduated"];
 
-export type MeState = { error?: string; saved?: boolean };
+export type MeState = { error?: string; savedAt?: number };
 
 // 이름·기수·상태만 고칠 수 있다. 권한(role)은 DB가 막는다.
 export async function updateProfile(_prev: MeState, formData: FormData): Promise<MeState> {
@@ -24,7 +24,7 @@ export async function updateProfile(_prev: MeState, formData: FormData): Promise
   if (error || !data?.length) return { error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
 
   revalidatePath("/", "layout");
-  return { saved: true };
+  return { savedAt: Date.now() }; // 저장할 때마다 값이 달라야 알림이 다시 뜬다
 }
 
 // 탈퇴: 로그인 계정을 지우면 프로필과 경험 카드가 함께 지워진다 (DB 연쇄 삭제).

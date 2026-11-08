@@ -9,10 +9,132 @@
   --color-navy-900: #0f1f38;
   --color-safety-500: #f7811e;
   --color-safety-600: #e06c0a;
-  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --color-safety-700: #c2410c; /* 흰 바탕 글자용. 600은 대비 3.3:1이라 글자에 못 쓴다 */
+  --font-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(15 31 56 / 0.04), 0 4px 14px rgb(15 31 56 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(15 31 56 / 0.06), 0 10px 24px rgb(15 31 56 / 0.1);
+
+  --animate-toast: toast 2.8s ease both;
+  @keyframes toast {
+    0% { opacity: 0; transform: translateY(12px); }
+    8%, 85% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(12px); visibility: hidden; }
+  }
+  @keyframes toast-fade {
+    0%, 100% { opacity: 0; visibility: hidden; }
+    8%, 85% { opacity: 1; visibility: visible; }
+  }
+
+  /* 위저드 질문 전환: 다음은 오른쪽에서, 이전은 왼쪽에서 들어온다 */
+  --animate-step-next: step-next 220ms ease-out both;
+  --animate-step-prev: step-prev 220ms ease-out both;
+  @keyframes step-next {
+    from { opacity: 0; transform: translateX(24px); }
+  }
+  @keyframes step-prev {
+    from { opacity: 0; transform: translateX(-24px); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+
+  /* 진행 막대가 왼쪽에서부터 차오른다 */
+  --animate-grow: grow 700ms ease-out both;
+  @keyframes grow {
+    from { transform: scaleX(0); }
+  }
+
+  /* 카드 완성 축하 아이콘이 톡 튀어나온다 */
+  --animate-pop: pop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.4); }
+  }
 }
 
-body {
-  background: #ffffff;
-  color: var(--color-navy-900);
+/* 앱처럼 보이는 카드. 목록·요약 상자에 쓴다 */
+@utility card {
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-navy-100);
+  background-color: #ffffff;
+  box-shadow: var(--shadow-card);
+}
+
+/* 눌러서 들어가는 카드. 마우스가 있는 기기에서만 살짝 떠오른다 */
+@utility card-hover {
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-2px);
+      border-color: var(--color-navy-700);
+      box-shadow: var(--shadow-card-hover);
+    }
+  }
+}
+
+@layer base {
+  body {
+    background: #ffffff;
+    color: var(--color-navy-900);
+  }
+
+  html {
+    touch-action: manipulation; /* 모바일 두 번 탭 확대 지연 없애기 */
+  }
+
+  /* 모바일 하단 탭 높이. 본문 아래 여백과 위저드 고정 버튼이 함께 쓴다 */
+  body {
+    --bottom-nav: calc(4rem + env(safe-area-inset-bottom));
+  }
+  @media (width >= 48rem) {
+    body {
+      --bottom-nav: 0px;
+    }
+  }
+
+  /* 키보드로 이동할 때만 보이는 포커스 표시. 네이비·흰 바탕 모두에서 3:1 이상 */
+  :focus-visible {
+    outline: 2px solid var(--color-safety-700);
+    outline-offset: 2px;
+  }
+
+  /* 버튼을 누르면 살짝 눌리는 느낌 */
+  button:not(:disabled) {
+    transition: transform 120ms ease, background-color 150ms ease, opacity 150ms ease;
+  }
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+}
+
+/* 글을 입력하는 동안에는 하단 탭을 숨겨 키보드 위 공간을 넓힌다.
+   탭의 flex 클래스(utilities 층)를 이겨야 해서 @layer 밖에 둔다. */
+body:has(:is(input:not([type="radio"], [type="checkbox"]), textarea, select):focus) {
+  --bottom-nav: 0px;
+  & .bottom-nav {
+    display: none;
+  }
+}
+
+/* 동작 줄이기를 켠 사용자: 움직임은 빼고 나타남·사라짐만 남긴다 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-toast {
+    animation-name: toast-fade;
+  }
+  .animate-step-next,
+  .animate-step-prev,
+  .animate-pop,
+  .animate-grow {
+    animation-name: fade-in;
+  }
+  .card-hover:hover,
+  button:not(:disabled):active {
+    transform: none;
+  }
 }

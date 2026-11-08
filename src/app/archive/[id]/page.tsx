@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -17,7 +18,7 @@ const smallButton = "rounded-lg border border-navy-100 px-3 py-1 text-sm";
 
 export default function PostPage({ params, searchParams }: PageProps<"/archive/[id]">) {
   return (
-    <Suspense fallback={<p>불러오는 중…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <Detail params={params} searchParams={searchParams} />
     </Suspense>
   );
@@ -48,12 +49,12 @@ async function Detail({ params, searchParams }: Pick<PageProps<"/archive/[id]">,
       </Link>
 
       {typeof errorMessage === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {errorMessage}
         </p>
       )}
       {p.is_hidden && (
-        <p className="rounded-lg bg-safety-500/10 p-3 text-sm text-safety-600">
+        <p className="rounded-lg bg-safety-500/10 p-3 text-sm text-safety-700">
           관리자가 숨긴 글이에요. 작성자와 관리자만 볼 수 있어요.
         </p>
       )}
@@ -80,7 +81,7 @@ async function Detail({ params, searchParams }: Pick<PageProps<"/archive/[id]">,
 
       <div className="flex flex-wrap items-center gap-2 border-t border-navy-100 pt-4">
         {p.is_mine && (
-          <Link href={`/archive/${p.id}/edit`} className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600">
+          <Link href={`/archive/${p.id}/edit`} className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">
             수정
           </Link>
         )}
@@ -106,7 +107,7 @@ async function Detail({ params, searchParams }: Pick<PageProps<"/archive/[id]">,
         {list.length === 0 && <p className="text-sm text-navy-700">아직 댓글이 없어요.</p>}
         <ul className="space-y-3">
           {list.map((c) => (
-            <li key={c.id} className={`rounded-lg border border-navy-100 p-3 ${c.is_hidden ? "opacity-60" : ""}`}>
+            <li key={c.id} className={`card p-3 ${c.is_hidden ? "opacity-60" : ""}`}>
               <p className="text-sm text-navy-700">
                 {authorLabel(c)} · {new Date(c.created_at).toLocaleDateString("ko-KR")}
                 {c.is_hidden && " · 숨김"}
@@ -137,7 +138,7 @@ async function Detail({ params, searchParams }: Pick<PageProps<"/archive/[id]">,
             <input type="checkbox" name="anonymous" />
             익명으로 쓰기 (관리자는 작성자를 확인할 수 있어요)
           </label>
-          <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600">댓글 올리기</button>
+          <button className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600">댓글 올리기</button>
         </form>
       </section>
     </article>

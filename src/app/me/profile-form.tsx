@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Toast } from "@/app/toast";
 import type { MemberStatus } from "@/lib/auth";
 import { updateProfile } from "./actions";
 
@@ -28,12 +29,12 @@ export function ProfileForm({ name, cohort, status }: { name: string; cohort: nu
         </select>
       </label>
       {state.error && (
-        <p role="alert" className="text-safety-600">
+        <p role="alert" className="text-safety-700">
           {state.error}
         </p>
       )}
-      {state.saved && <p role="status">저장했어요.</p>}
-      <button disabled={pending} className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-white hover:bg-safety-600 disabled:opacity-60">
+      {state.savedAt && <Toast key={state.savedAt}>저장했어요</Toast>}
+      <button disabled={pending} className="rounded-lg bg-safety-500 px-4 py-2 font-bold text-navy-900 hover:bg-safety-600 disabled:opacity-60">
         저장
       </button>
     </form>

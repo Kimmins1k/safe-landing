@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/app/skeleton";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -8,7 +9,7 @@ import { PostForm } from "../../post-form";
 
 export default function EditPostPage({ params, searchParams }: PageProps<"/archive/[id]/edit">) {
   return (
-    <Suspense fallback={<p>불러오는 중…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <Edit params={params} searchParams={searchParams} />
     </Suspense>
   );
@@ -33,7 +34,7 @@ async function Edit({ params, searchParams }: Pick<PageProps<"/archive/[id]/edit
       </Link>
       <h1 className="text-2xl font-bold">{BOARD_LABEL[post.board]} 고치기</h1>
       {typeof error === "string" && (
-        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-600">
+        <p role="alert" className="rounded-lg bg-safety-500/10 p-3 text-safety-700">
           {error}
         </p>
       )}
