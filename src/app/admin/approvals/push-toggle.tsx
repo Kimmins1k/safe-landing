@@ -35,11 +35,13 @@ export function PushToggle() {
     setBusy(true);
     setError("");
     try {
+      const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!key) return setError("알림 설정이 아직 준비되지 않았어요. 임원진(개발 담당)에게 알려 주세요. (공개 키 없음)");
       if ((await Notification.requestPermission()) !== "granted") return setStatus("denied");
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: toBytes(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+        applicationServerKey: toBytes(key),
       });
       const json = sub.toJSON();
       const result = await subscribePush({ endpoint: sub.endpoint, p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" });
@@ -48,8 +50,9 @@ export function PushToggle() {
         return setError(result.error);
       }
       setStatus("on");
-    } catch {
-      setError("알림을 켜지 못했어요. 다시 시도해 주세요.");
+    } catch (e) {
+      // 휴대폰마다 막히는 이유가 달라서, 문의받을 때 원인을 알 수 있게 오류 이름을 같이 보여 준다.
+      setError(`알림을 켜지 못했어요. 다시 시도해 주세요. (${e instanceof Error ? e.name : "오류"})`);
     } finally {
       setBusy(false);
     }
