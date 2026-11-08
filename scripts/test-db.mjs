@@ -192,6 +192,26 @@ await as(BOB, `insert into public.experiences (is_draft) values (true)`);
 await as(ALICE, `select public.remove_member($1)`, [BOB]);
 assert.equal((await db.query(`select count(*)::int as n from public.experiences`)).rows[0].n, 0);
 
+// 11-1. 자격증·교육: 본인은 전부, 남은 공개(club)만. 승인 대기·비로그인은 못 본다. 구분과 상태가 맞아야 한다.
+const FRANK = "00000000-0000-0000-0000-0000000000f1";
+await db.exec(`insert into auth.users values ('${FRANK}', 'frank@example.com')`);
+await as(FRANK, `insert into public.profiles (id, name, cohort) values ($1, '프랭크', 2025)`, [FRANK]);
+await as(ALICE, `select public.set_member_role($1, 'member')`, [FRANK]);
+
+await fails(as(EVE, `insert into public.credentials (kind, name, status) values ('certificate', 'x', 'preparing')`), /row-level security/);
+await fails(as(FRANK, `insert into public.credentials (user_id, kind, name, status) values ($1, 'certificate', 'x', 'preparing')`, [ALICE]), /permission denied/);
+await fails(as(FRANK, `insert into public.credentials (kind, name, status) values ('certificate', 'x', 'completed')`), /check constraint/);
+await fails(as(FRANK, `insert into public.credentials (kind, name, status, acquired_date) values ('certificate', 'x', 'preparing', '2026-01-01')`), /check constraint/);
+await as(FRANK, `insert into public.credentials (kind, name, status, visibility) values ('certificate', '산업안전기사', 'acquired', 'club')`);
+await as(FRANK, `insert into public.credentials (kind, name, status) values ('training', '비공개 교육', 'planned')`);
+assert.equal((await as(FRANK, `select id from public.credentials`)).length, 2, "본인은 둘 다 본다");
+assert.deepEqual((await as(ALICE, `select name from public.credentials`)).map((r) => r.name), ["산업안전기사"], "남은 공개 기록만 본다");
+assert.equal((await as(EVE, `select id from public.credentials`)).length, 0, "승인 대기자는 못 본다");
+await fails(as(null, `select id from public.credentials`), /permission denied/);
+await as(ALICE, `update public.credentials set name = '해킹'`); // 남의 기록은 0건 처리
+await as(ALICE, `delete from public.credentials`);
+assert.equal((await db.query(`select count(*)::int as n from public.credentials`)).rows[0].n, 2);
+
 // 11-2. 탈퇴(계정 삭제): 관리자가 둘일 때는 한 명이 나갈 수 있고, 마지막 관리자는 DB가 막는다.
 await db.exec(`delete from auth.users where id = '${ALICE}'`);
 await fails(db.exec(`delete from auth.users where id = '${ADMIN}'`), /최소 1명/);

@@ -16,6 +16,10 @@ async function Home() {
   if (!profile) return null;
   const { data: cards } = await supabase.from("experiences").select("is_draft").eq("user_id", userId);
   const drafts = (cards ?? []).filter((c) => c.is_draft).length;
+  const { count: credentialCount } = await supabase
+    .from("credentials")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">안녕하세요, {profile.name}님</h1>
@@ -23,7 +27,7 @@ async function Home() {
         {profile.cohort}학번 · {STATUS_LABEL[profile.status]}
         {profile.role === "admin" && " · 관리자"}
       </p>
-      {/* shortcut: 자격증·아카이브 홈 요약은 1월 일정에서 채운다 */}
+      {/* shortcut: 아카이브 홈 요약은 아카이브를 만들 때 채운다 */}
       <div className="space-y-2 rounded-lg bg-navy-50 p-4">
         <p>
           내 경험 카드 <b>{(cards ?? []).length}개</b>
@@ -37,6 +41,12 @@ async function Home() {
             문항 유형별 보기
           </Link>
         </div>
+        <p className="pt-2">
+          자격증·교육 기록 <b>{credentialCount ?? 0}개</b>
+        </p>
+        <Link href="/credentials" className="inline-block text-sm font-bold underline">
+          자격증·교육 관리
+        </Link>
       </div>
       <div className="space-y-2 rounded-lg bg-navy-50 p-4">
         <p className="font-bold">선배·동기는 어떻게 썼을까?</p>
