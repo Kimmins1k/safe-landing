@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import type { PostRow } from "@/lib/archive";
+import { BOARD_LABEL, type PostRow } from "@/lib/archive";
 import { requireStage, STATUS_LABEL } from "@/lib/auth";
 import { SignOutButton } from "./sign-out-button";
 
@@ -15,11 +15,30 @@ export default function HomePage() {
 async function Home() {
   const { supabase, userId, profile } = await requireStage("member");
   if (!profile) return null;
-  const { data: cards } = await supabase.from("experiences").select("is_draft").eq("user_id", userId);
-  const drafts = (cards ?? []).filter((c) => c.is_draft).length;
+  const [cardsRes, typesRes, qna, review, tip] = await Promise.all([
+    supabase.from("experiences").select("is_draft, experience_question_types(question_type_id)").eq("user_id", userId),
+    supabase.from("question_types").select("id, name, is_experience_based").eq("is_active", true).order("sort_order"),
+    supabase.rpc("list_posts", { p_board: "qna", p_limit: 30 }),
+    supabase.rpc("list_posts", { p_board: "review", p_limit: 3 }),
+    supabase.rpc("list_posts", { p_board: "tip", p_limit: 3 }),
+  ]);
+  const cards = (cardsRes.data ?? []) as { is_draft: boolean; experience_question_types: { question_type_id: number }[] }[];
+  const drafts = cards.filter((c) => c.is_draft).length;
+
+  // 문항 유형마다 완성한 카드가 몇 개 연결됐는지. 경험으로 채우는 문항인데 0개면 비었다고 알려 준다.
+  const done = cards.filter((c) => !c.is_draft);
+  const typeStatus = ((typesRes.data ?? []) as { id: number; name: string; is_experience_based: boolean }[]).map((t) => ({
+    ...t,
+    count: done.filter((c) => c.experience_question_types.some((l) => l.question_type_id === t.id)).length,
+  }));
+  const emptyCount = typeStatus.filter((t) => t.is_experience_based && t.count === 0).length;
+
   // 답변이 없는 질문을 홈에 보여 줘서 답변이 달리게 한다 (알림이 없으므로).
-  const { data: questions } = await supabase.rpc("list_posts", { p_board: "qna", p_limit: 30 });
-  const unanswered = ((questions ?? []) as PostRow[]).filter((q) => !q.is_answered && !q.is_hidden).slice(0, 3);
+  const visible = (rows: unknown) => ((rows ?? []) as PostRow[]).filter((p) => !p.is_hidden);
+  const unanswered = visible(qna.data).filter((q) => !q.is_answered).slice(0, 3);
+  const recent = [...visible(qna.data).slice(0, 3), ...visible(review.data), ...visible(tip.data)]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 3);
   const { count: credentialCount } = await supabase
     .from("credentials")
     .select("id", { count: "exact", head: true })
@@ -33,7 +52,7 @@ async function Home() {
       </p>
       <div className="space-y-2 rounded-lg bg-navy-50 p-4">
         <p>
-          내 경험 카드 <b>{(cards ?? []).length}개</b>
+          내 경험 카드 <b>{cards.length}개</b>
           {drafts > 0 && <span className="text-safety-600"> (임시 저장 {drafts}개)</span>}
         </p>
         <div className="flex flex-wrap gap-3 text-sm font-bold">
@@ -49,6 +68,29 @@ async function Home() {
         </p>
         <Link href="/credentials" className="inline-block text-sm font-bold underline">
           자격증·교육 관리
+        </Link>
+      </div>
+      <div className="space-y-2 rounded-lg border border-navy-100 p-4">
+        <p className="font-bold">자소서 문항 유형별 내 경험</p>
+        {emptyCount > 0 && (
+          <p className="text-sm text-safety-600">⚠️ 경험이 없는 문항이 {emptyCount}개 있어요. 완성한 카드를 문항 유형에 연결해 보세요.</p>
+        )}
+        <ul className="grid gap-1 text-sm sm:grid-cols-2">
+          {typeStatus.map((t) => (
+            <li key={t.id} className="flex justify-between gap-2">
+              <span>{t.name}</span>
+              {!t.is_experience_based ? (
+                <span className="text-navy-700">경험 외 문항</span>
+              ) : t.count === 0 ? (
+                <span className="font-bold text-safety-600">⚠️ 비어 있음</span>
+              ) : (
+                <b>{t.count}개</b>
+              )}
+            </li>
+          ))}
+        </ul>
+        <Link href="/experiences/by-question" className="inline-block text-sm font-bold underline">
+          문항 유형별로 자세히 보기
         </Link>
       </div>
       <div className="space-y-2 rounded-lg bg-navy-50 p-4">
@@ -74,6 +116,21 @@ async function Home() {
                 <Link href={`/archive/${q.id}`} className="underline">
                   {q.title}
                 </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {recent.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-navy-100 p-4">
+          <p className="font-bold">최근 아카이브 글</p>
+          <ul className="space-y-1 text-sm">
+            {recent.map((p) => (
+              <li key={p.id}>
+                <Link href={`/archive/${p.id}`} className="underline">
+                  {p.title}
+                </Link>
+                <span className="text-navy-700"> · {BOARD_LABEL[p.board]}</span>
               </li>
             ))}
           </ul>
