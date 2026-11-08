@@ -192,6 +192,10 @@ await as(BOB, `insert into public.experiences (is_draft) values (true)`);
 await as(ALICE, `select public.remove_member($1)`, [BOB]);
 assert.equal((await db.query(`select count(*)::int as n from public.experiences`)).rows[0].n, 0);
 
+// 11-2. 탈퇴(계정 삭제): 관리자가 둘일 때는 한 명이 나갈 수 있고, 마지막 관리자는 DB가 막는다.
+await db.exec(`delete from auth.users where id = '${ALICE}'`);
+await fails(db.exec(`delete from auth.users where id = '${ADMIN}'`), /최소 1명/);
+
 // 12. 정지 방지 Cron(service_role)은 읽을 수 있다.
 await db.exec(`set role service_role`);
 await db.query(`select count(*) from public.profiles`);

@@ -54,7 +54,12 @@ async function Home() {
           관리자 메뉴 (가입 승인 · 회원 · 활동 · 태그·문항 유형)
         </Link>
       )}
-      <SignOutButton />
+      <div className="flex flex-wrap items-center gap-4">
+        <SignOutButton />
+        <Link href="/me" className="text-sm text-navy-700 underline">
+          마이페이지
+        </Link>
+      </div>
     </div>
   );
 }
