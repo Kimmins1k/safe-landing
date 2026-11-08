@@ -38,6 +38,17 @@ async function Home() {
           </Link>
         </div>
       </div>
+      <div className="space-y-2 rounded-lg bg-navy-50 p-4">
+        <p className="font-bold">선배·동기는 어떻게 썼을까?</p>
+        <div className="flex flex-wrap gap-3 text-sm font-bold">
+          <Link href="/activities" className="underline">
+            동아리 활동
+          </Link>
+          <Link href="/experiences/shared" className="underline">
+            공개 경험 목록
+          </Link>
+        </div>
+      </div>
       {profile.role === "admin" && (
         <Link href="/admin/approvals" className="inline-block font-bold text-safety-600 underline">
           관리자 메뉴 (가입 승인 · 회원 · 활동 · 태그·문항 유형)

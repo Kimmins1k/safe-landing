@@ -63,8 +63,8 @@ async function Detail({ params }: Pick<PageProps<"/experiences/[id]">, "params">
 
   return (
     <article className="space-y-6">
-      <Link href="/experiences" className="text-sm text-navy-700 underline">
-        ← 내 경험 목록
+      <Link href={mine ? "/experiences" : "/experiences/shared"} className="text-sm text-navy-700 underline">
+        {mine ? "← 내 경험 목록" : "← 공개 경험 목록"}
       </Link>
 
       {card.is_draft && (
