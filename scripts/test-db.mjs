@@ -128,6 +128,19 @@ const [{ id: OLD_ACT }] = await as(ALICE, `insert into public.activities (title,
 await as(BOB, `update public.activities set is_hidden = true where id = $1`, [OLD_ACT]); // 회원은 0건 처리
 assert.equal((await db.query(`select is_hidden from public.activities where id = $1`, [OLD_ACT])).rows[0].is_hidden, false);
 
+// 10-2. 태그·문항 유형: 관리자만 추가·수정(비활성화 포함). 회원은 0건 처리, 삭제는 아무도 못 한다.
+await fails(as(BOB, `insert into public.competency_tags (name) values ('몰래')`), /row-level security/);
+await as(ALICE, `insert into public.competency_tags (name, sort_order) values ('새 태그', 99)`);
+await fails(as(ALICE, `insert into public.competency_tags (name) values ('새 태그')`), /duplicate key/);
+await fails(as(ALICE, `insert into public.question_types (name, is_active) values ('x', false)`), /permission denied/);
+await as(ALICE, `insert into public.question_types (name, description, is_experience_based) values ('새 문항', '설명', false)`);
+await as(BOB, `update public.question_types set is_active = false where name = '새 문항'`);
+assert.equal((await db.query(`select is_active from public.question_types where name = '새 문항'`)).rows[0].is_active, true);
+await as(ALICE, `update public.question_types set is_active = false where name = '새 문항'`);
+assert.equal((await db.query(`select is_active from public.question_types where name = '새 문항'`)).rows[0].is_active, false);
+await fails(as(ALICE, `delete from public.question_types where name = '새 문항'`), /permission denied/);
+await db.exec(`delete from public.question_types where name = '새 문항'; delete from public.competency_tags where name = '새 태그'`);
+
 // 11. 경험 카드: 임시 저장은 본인만, 완료 + 공개만 다른 회원이 본다.
 const QT = (await db.query(`select id from public.question_types order by sort_order`)).rows.map((r) => r.id);
 const TAG = (await db.query(`select id from public.competency_tags order by sort_order`)).rows.map((r) => r.id);

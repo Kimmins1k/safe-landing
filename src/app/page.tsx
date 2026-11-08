@@ -40,7 +40,7 @@ async function Home() {
       </div>
       {profile.role === "admin" && (
         <Link href="/admin/approvals" className="inline-block font-bold text-safety-600 underline">
-          관리자 메뉴 (가입 승인 · 회원 · 활동 관리)
+          관리자 메뉴 (가입 승인 · 회원 · 활동 · 태그·문항 유형)
         </Link>
       )}
       <SignOutButton />
